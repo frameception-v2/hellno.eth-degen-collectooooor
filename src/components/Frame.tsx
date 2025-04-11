@@ -8,7 +8,7 @@ import { SCORE_THRESHOLD, INITIAL_LIVES } from "~/lib/constants";
 interface Collectible {
   x: number;
   y: number;
-  type: "❤️" | "✨";
+  type: "💎" | "🪙";
   id: number;
 }
 
@@ -59,7 +59,7 @@ export default function Frame() {
         const newCollectible: Collectible = {
           x: Math.random() * 280,
           y: 0,
-          type: Math.random() > 0.5 ? "❤️" : "✨",
+          type: Math.random() > 0.5 ? "💎" : "🪙",
           id: lastCollectibleId + 1
         };
         setLastCollectibleId(prev => prev + 1);
@@ -84,7 +84,7 @@ export default function Frame() {
         );
         
         collisions.forEach(c => {
-          setScore(prev => prev + (c.type === "❤️" ? 100 : 150));
+          setScore(prev => prev + (c.type === "💎" ? 200 : 100));
         });
 
         // Remove collected and out-of-bounds collectibles
@@ -171,7 +171,7 @@ export default function Frame() {
           transform: 'translate(-50%, -50%)'
         }}
       >
-        🤚
+        🎩
       </div>
     </div>
   );
