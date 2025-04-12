@@ -9,7 +9,9 @@ import {
   CELL_SIZE, 
   MAZE_WIDTH, 
   MAZE_HEIGHT,
-  MAZE_LAYOUT 
+  MAZE_LAYOUT,
+  GHOST_SPEED,
+  INITIAL_GHOST_POSITIONS
 } from "~/lib/constants";
 
 interface Position {
@@ -28,6 +30,7 @@ export default function Frame() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [gameOver, setGameOver] = useState(false);
+  const [ghosts, setGhosts] = useState(INITIAL_GHOST_POSITIONS);
   const [playerPos, setPlayerPos] = useState<Position>(() => {
     const startPos = { x: 0, y: 0 };
     MAZE_LAYOUT.forEach((row, y) => {
@@ -93,6 +96,33 @@ export default function Frame() {
   useEffect(() => {
     if (gameOver) return;
 
+    // Check for ghost collision
+    const ghostCollision = ghosts.some(ghost => 
+      ghost.x === playerPos.x && ghost.y === playerPos.y
+    );
+
+    if (ghostCollision) {
+      setLives(prev => {
+        const newLives = prev - 1;
+        if (newLives <= 0) {
+          setGameOver(true);
+        }
+        return newLives;
+      });
+      // Reset player position on collision
+      setPlayerPos(() => {
+        const startPos = { x: 0, y: 0 };
+        MAZE_LAYOUT.forEach((row, y) => {
+          const x = row.indexOf('P');
+          if (x !== -1) {
+            startPos.x = x;
+            startPos.y = y;
+          }
+        });
+        return startPos;
+      });
+    }
+
     // Check for dot collection
     setDots(prev => {
       let updated = false;
@@ -112,7 +142,33 @@ export default function Frame() {
 
       return updated ? newDots : prev;
     });
-  }, [gameOver, playerPos]);
+  }, [gameOver, playerPos, ghosts]);
+
+  // Ghost movement
+  useEffect(() => {
+    if (gameOver) return;
+
+    const moveGhost = () => {
+      setGhosts(prevGhosts => 
+        prevGhosts.map(ghost => {
+          const possibleMoves = [
+            { x: ghost.x + 1, y: ghost.y },
+            { x: ghost.x - 1, y: ghost.y },
+            { x: ghost.x, y: ghost.y + 1 },
+            { x: ghost.x, y: ghost.y - 1 }
+          ].filter(move => isValidMove(move.x, move.y));
+
+          if (possibleMoves.length === 0) return ghost;
+          
+          const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+          return randomMove;
+        })
+      );
+    };
+
+    const interval = setInterval(moveGhost, GHOST_SPEED);
+    return () => clearInterval(interval);
+  }, [gameOver, isValidMove]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -164,7 +220,7 @@ export default function Frame() {
             <div
               key={`${x}-${y}`}
               className={`w-[${CELL_SIZE}px] h-[${CELL_SIZE}px] ${
-                cell === '#' ? 'bg-primary' : 'bg-background'
+                cell === '#' ? 'bg-blue-800 border border-blue-500' : 'bg-background'
               }`}
             />
           ))
@@ -182,6 +238,21 @@ export default function Frame() {
         />
       ))}
       
+      {/* Render ghosts */}
+      {ghosts.map((ghost, i) => (
+        <div
+          key={`ghost-${i}`}
+          className="absolute text-xl z-10"
+          style={{
+            left: ghost.x * CELL_SIZE + CELL_SIZE/2 - 10,
+            top: ghost.y * CELL_SIZE + CELL_SIZE/2 - 10
+          }}
+        >
+          👻
+        </div>
+      ))}
+
+      {/* Render player */}
       <div
         className="absolute text-xl z-10"
         style={{
