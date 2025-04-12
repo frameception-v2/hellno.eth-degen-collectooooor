@@ -30,6 +30,27 @@ export default function Frame() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [gameOver, setGameOver] = useState(false);
+
+  const resetGame = () => {
+    setScore(0);
+    setLives(INITIAL_LIVES);
+    setGameOver(false);
+    setGhosts(INITIAL_GHOST_POSITIONS);
+    // Reset player position
+    setPlayerPos(() => {
+      const startPos = { x: 0, y: 0 };
+      MAZE_LAYOUT.forEach((row, y) => {
+        const x = row.indexOf('P');
+        if (x !== -1) {
+          startPos.x = x;
+          startPos.y = y;
+        }
+      });
+      return startPos;
+    });
+    // Reset dots
+    setDots(prev => prev.map(dot => ({ ...dot, eaten: false })));
+  };
   const [ghosts, setGhosts] = useState(INITIAL_GHOST_POSITIONS);
   const [playerPos, setPlayerPos] = useState<Position>(() => {
     const startPos = { x: 0, y: 0 };
@@ -193,6 +214,12 @@ export default function Frame() {
             {score >= SCORE_THRESHOLD && 
               <p className="mt-2 text-green-500">You won! 🎉</p>
             }
+            <button
+              onClick={resetGame}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              Play Again
+            </button>
           </CardContent>
         </Card>
       </div>
