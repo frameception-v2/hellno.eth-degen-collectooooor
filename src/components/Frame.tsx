@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, TouchEvent as ReactTouchEvent } from "react";
 import { Card, CardContent } from "~/components/ui/card";
 import { useFrameSDK } from "~/hooks/useFrameSDK";
 import { 
@@ -98,7 +98,7 @@ export default function Frame() {
     }
     // Check if there's an uneaten dot at this position
     return dots.some(dot => dot.x === x && dot.y === y && !dot.eaten) || MAZE_LAYOUT[y][x] === 'P';
-  }, []);
+  }, [dots]);
 
   const movePlayer = useCallback((dx: number, dy: number) => {
     setPlayerPos(prev => {
@@ -120,20 +120,38 @@ export default function Frame() {
     }
   }, [movePlayer]);
 
-  const handleTouch = useCallback((e: TouchEvent) => {
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+
+  const handleTouchStart = useCallback((e: ReactTouchEvent) => {
     e.preventDefault();
     const touch = e.touches[0];
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const touchX = touch.clientX - rect.left;
-    const touchY = touch.clientY - rect.top;
+    setTouchStart({
+      x: touch.clientX,
+      y: touch.clientY
+    });
+  }, []);
+
+  const handleTouchEnd = useCallback((e: ReactTouchEvent) => {
+    e.preventDefault();
+    if (!touchStart) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
     
-    const cellX = Math.floor(touchX / CELL_SIZE);
-    const cellY = Math.floor(touchY / CELL_SIZE);
-    
-    if (isValidMove(cellX, cellY)) {
-      setPlayerPos({ x: cellX, y: cellY });
+    // Determine primary direction of swipe
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (deltaX > 50) movePlayer(1, 0); // Right
+      else if (deltaX < -50) movePlayer(-1, 0); // Left
+    } else {
+      // Vertical swipe
+      if (deltaY > 50) movePlayer(0, 1); // Down
+      else if (deltaY < -50) movePlayer(0, -1); // Up
     }
-  }, [isValidMove]);
+    
+    setTouchStart(null);
+  }, [movePlayer, touchStart]);
 
   useEffect(() => {
     if (gameOver || isResetting) return;
@@ -184,7 +202,7 @@ export default function Frame() {
 
       return updated ? newDots : prev;
     });
-  }, [gameOver, playerPos, ghosts]);
+  }, [gameOver, isResetting, playerPos, ghosts]);
 
   // Ghost movement
   useEffect(() => {
@@ -214,12 +232,10 @@ export default function Frame() {
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("touchmove", handleTouch);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("touchmove", handleTouch);
     };
-  }, [handleKeyDown, handleTouch]);
+  }, [handleKeyDown]);
 
   if (!isSDKLoaded) {
     return <div>Loading...</div>;
@@ -251,6 +267,8 @@ export default function Frame() {
     <div 
       className="w-[300px] h-[300px] mx-auto relative touch-none"
       style={{ touchAction: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="absolute top-2 left-2 z-10 font-bold text-foreground">
         Score: {score}
