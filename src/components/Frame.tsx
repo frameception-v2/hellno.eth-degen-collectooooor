@@ -92,7 +92,12 @@ export default function Frame() {
   });
 
   const isValidMove = useCallback((x: number, y: number) => {
-    return x >= 0 && x < MAZE_WIDTH && y >= 0 && y < MAZE_HEIGHT && MAZE_LAYOUT[y][x] !== '#';
+    // Check bounds and wall collision
+    if (x < 0 || x >= MAZE_WIDTH || y < 0 || y >= MAZE_HEIGHT || MAZE_LAYOUT[y][x] === '#') {
+      return false;
+    }
+    // Check if there's an uneaten dot at this position
+    return dots.some(dot => dot.x === x && dot.y === y && !dot.eaten) || MAZE_LAYOUT[y][x] === 'P';
   }, []);
 
   const movePlayer = useCallback((dx: number, dy: number) => {
