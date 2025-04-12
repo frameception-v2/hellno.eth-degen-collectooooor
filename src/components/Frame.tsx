@@ -31,7 +31,10 @@ export default function Frame() {
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [gameOver, setGameOver] = useState(false);
 
+  const [isResetting, setIsResetting] = useState(false);
+
   const resetGame = () => {
+    setIsResetting(true);
     setScore(0);
     setLives(INITIAL_LIVES);
     setGameOver(false);
@@ -58,6 +61,11 @@ export default function Frame() {
       });
     });
     setDots(newDots);
+    
+    // Clear the resetting flag after a short delay
+    setTimeout(() => {
+      setIsResetting(false);
+    }, 100);
   };
   const [ghosts, setGhosts] = useState(INITIAL_GHOST_POSITIONS);
   const [playerPos, setPlayerPos] = useState<Position>(() => {
@@ -123,7 +131,7 @@ export default function Frame() {
   }, [isValidMove]);
 
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || isResetting) return;
 
     // Check for ghost collision
     const ghostCollision = ghosts.some(ghost => 
