@@ -48,8 +48,16 @@ export default function Frame() {
       });
       return startPos;
     });
-    // Reset dots
-    setDots(prev => prev.map(dot => ({ ...dot, eaten: false })));
+    // Reset dots by creating a fresh array
+    const newDots: Dot[] = [];
+    MAZE_LAYOUT.forEach((row, y) => {
+      row.split('').forEach((cell, x) => {
+        if (cell === ' ') {
+          newDots.push({ x, y, eaten: false });
+        }
+      });
+    });
+    setDots(newDots);
   };
   const [ghosts, setGhosts] = useState(INITIAL_GHOST_POSITIONS);
   const [playerPos, setPlayerPos] = useState<Position>(() => {
